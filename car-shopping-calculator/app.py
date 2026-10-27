@@ -215,6 +215,24 @@ def lookup_sales_tax(state):
     }
 
 
+def calculate_loan_payment(principal, annual_interest_rate_percent, term_months):
+    monthly_rate = Decimal(str(annual_interest_rate_percent)) / Decimal("1200")
+    if monthly_rate == 0:
+        monthly_payment = principal / Decimal(term_months)
+    else:
+        monthly_payment = principal * monthly_rate / (
+            Decimal("1") - (Decimal("1") + monthly_rate) ** -term_months
+        )
+
+    total_interest = (monthly_payment * term_months - principal).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    monthly_payment = monthly_payment.quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+    return monthly_payment, total_interest
+
+
 st.header("Car Shopping Calculator")
 st.caption(
     "Select your state to estimate sales tax, government fees, and calculate an out-the-door price."
@@ -233,6 +251,9 @@ with st.form("car_shopping_form"):
     )
     add_ons = st.number_input(
         "Add-ons ($)", min_value=0.0, value=0.0, step=100.0, format="%.2f"
+    )
+    trade_in_value = st.number_input(
+        "Trade-in Value ($)", min_value=0.0, value=0.0, step=100.0, format="%.2f"
     )
     doc_fee = st.number_input(
         "Doc Fee ($)", min_value=0.0, value=175.0, step=25.0, format="%.2f"
@@ -289,17 +310,31 @@ if submitted and tax_info is not None:
         + Decimal(str(title_fee))
         + Decimal(str(registration_fee))
         + sales_tax
+        - Decimal(str(trade_in_value))
     )
+    st.session_state["otd_calculation"] = {
+        "state": tax_info["state"],
+        "rate": rate,
+        "sales_tax": sales_tax,
+        "trade_in_value": Decimal(str(trade_in_value)),
+        "total": total,
+        "rates_as_of": tax_info["rates_as_of"],
+        "state_slug": tax_info["state_slug"],
+    }
 
+if "otd_calculation" in st.session_state:
+    calculation = st.session_state["otd_calculation"]
     st.subheader("Estimated out-the-door price")
-    st.metric("Estimated total", f"${total:,.2f}")
-    st.write(f"**State:** {tax_info['state']}")
-    st.write(f"**Estimated combined sales tax rate:** {rate:.3f}%")
-    st.write(f"**Estimated sales tax:** ${sales_tax:,.2f}")
+    st.metric("Estimated total", f"${calculation['total']:,.2f}")
+
+    st.write(f"**State:** {calculation['state']}")
+    st.write(f"**Estimated combined sales tax rate:** {calculation['rate']:.3f}%")
+    st.write(f"**Estimated sales tax:** ${calculation['sales_tax']:,.2f}")
+    st.write(f"**Trade-in credit:** -${calculation['trade_in_value']:,.2f}")
     st.caption(
-        f"Rate data as of {tax_info['rates_as_of']}. Source: "
+        f"Rate data as of {calculation['rates_as_of']}. Source: "
         f"[ReceiptEdit 2026 sales tax data]"
-        f"(https://receiptedit.com/api/sales-tax/{tax_info['state_slug']}). "
+        f"(https://receiptedit.com/api/sales-tax/{calculation['state_slug']}). "
         f"Title fee estimates are for a typical passenger vehicle, based on the "
         f"[US Vehicle Tax Calculator state-fee dataset]"
         f"(https://github.com/abderrahim13224/car-sales-tax-by-state), last "
@@ -311,6 +346,49 @@ if submitted and tax_info is not None:
         f"This estimate taxes the selling price and add-ons; fees are added "
         f"without tax."
     )
+
+    st.subheader("Financing calculator")
+    financing_type = st.radio(
+        "Financing type", ["Cash", "Finance"], horizontal=True
+    )
+    if financing_type == "Cash":
+        st.metric("Estimated payment due", f"${calculation['total']:,.2f}")
+    else:
+        down_payment = st.number_input(
+            "Down Payment ($)", min_value=0.0, value=0.0, step=500.0, format="%.2f"
+        )
+        loan_term = st.number_input(
+            "Loan Term (months)", min_value=1, value=60, step=12
+        )
+        interest_rate = st.number_input(
+            "Annual Interest Rate (%)",
+            min_value=0.0,
+            value=6.0,
+            step=0.25,
+            format="%.2f",
+        )
+        down_payment_amount = Decimal(str(down_payment))
+        if down_payment_amount > calculation["total"]:
+            st.error("Down payment cannot exceed the estimated out-the-door price.")
+        else:
+            amount_financed = calculation["total"] - down_payment_amount
+            monthly_payment, total_interest = calculate_loan_payment(
+                amount_financed, interest_rate, loan_term
+            )
+            total_loan_cost = amount_financed + total_interest
+            (
+                payment_due_col,
+                monthly_payment_col,
+                interest_col,
+                loan_cost_col,
+            ) = st.columns(4)
+            payment_due_col.metric("Est. payment due", f"${down_payment:,.2f}")
+            monthly_payment_col.metric("Est. monthly payment", f"${monthly_payment:,.2f}")
+            interest_col.metric("Est. total interest", f"${total_interest:,.2f}")
+            loan_cost_col.metric(
+                "Est. total loan cost", f"${total_loan_cost:,.2f}"
+            )
+            st.write(f"**Amount financed:** ${amount_financed:,.2f}")
 
 st.caption(
     "For an exact quote, confirm the tax rate, taxable fees, and registration charges "

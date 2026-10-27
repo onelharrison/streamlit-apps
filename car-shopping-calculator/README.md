@@ -1,8 +1,13 @@
 # Car Shopping Calculator
 
 A Streamlit app that estimates vehicle sales tax and out-the-door price from the
-selected state and entered vehicle costs. State tax and fee figures are
-estimates; local rules and vehicle details can change the actual amount.
+selected state and entered vehicle costs, including an optional trade-in credit.
+After calculating the out-the-door price, choose cash or use the separate
+financing calculator to estimate a monthly payment, total loan interest, and
+total loan cost from the down payment, term, and interest rate. Financing
+estimates update as the loan inputs change. State tax, fee, and loan figures
+are estimates; local rules, lender terms, and vehicle details can change the
+actual amount.
 
 ## Deploy to Streamlit Community Cloud
 
