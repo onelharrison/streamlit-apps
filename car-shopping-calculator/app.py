@@ -233,9 +233,11 @@ def calculate_loan_payment(principal, annual_interest_rate_percent, term_months)
     return monthly_payment, total_interest
 
 
-st.header("Car Shopping Calculator")
+st.set_page_config(page_title="Car Shopping Calculator")
+st.title("Car Shopping Calculator")
 st.caption(
-    "Select your state to estimate sales tax, government fees, and calculate an out-the-door price."
+    "Select your state to estimate sales tax, government fees, and calculate an out-the-door "
+    "price."
 )
 
 state = st.selectbox("State", STATES)
@@ -343,8 +345,7 @@ if "otd_calculation" in st.session_state:
         f"uses the state DMV fee page and assumes a 20-39 MPG gasoline passenger "
         f"vehicle. Actual fees vary by vehicle and circumstances. "
         f"The sales tax rate is a state average, not an address-specific rate. "
-        f"This estimate taxes the selling price and add-ons; fees are added "
-        f"without tax."
+        f"This estimate taxes the selling price and add-ons; fees are added without tax."
     )
 
     st.subheader("Financing calculator")
@@ -393,4 +394,8 @@ if "otd_calculation" in st.session_state:
 st.caption(
     "For an exact quote, confirm the tax rate, taxable fees, and registration charges "
     "with your dealer or state tax authority."
+)
+st.caption(
+    "Additonally, when buying a used car, a pre-purchase inspection is highly recommended. "
+    "Costs vary and are not included in this estimate."
 )

@@ -2,6 +2,8 @@
 
 A Streamlit app that estimates vehicle sales tax and out-the-door price from the
 selected state and entered vehicle costs, including an optional trade-in credit.
+The app notes that a pre-purchase inspection is highly recommended when buying
+a used car; its variable cost is not included in the estimate.
 After calculating the out-the-door price, choose cash or use the separate
 financing calculator to estimate a monthly payment, total loan interest, and
 total loan cost from the down payment, term, and interest rate. Financing
